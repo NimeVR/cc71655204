@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { Link } from "react-router-dom"
+import { jobAPI } from "../services/api"
 
 function Home() {
   const [jobs, setJobs] = useState([])
@@ -10,20 +11,76 @@ function Home() {
     activeJobs: 0,
     companies: 0,
   })
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
   useEffect(() => {
-    // Load jobs from localStorage
-    const savedJobs = localStorage.getItem("jobs")
-    if (savedJobs) {
-      const jobsData = JSON.parse(savedJobs)
+    fetchJobs()
+  }, [])
+
+  const fetchJobs = async () => {
+    try {
+      setLoading(true)
+      const response = await jobAPI.getAllJobs()
+      const jobsData = response.data || []
+
       setJobs(jobsData)
       setStats({
         totalJobs: jobsData.length,
-        activeJobs: jobsData.length,
+        activeJobs: jobsData.filter((job) => job.status === "Active").length,
         companies: new Set(jobsData.map((job) => job.company)).size,
       })
+      setError(null)
+    } catch (err) {
+      console.error("Error fetching jobs:", err)
+      setError("Failed to load jobs. Please make sure the server is running on port 5000.")
+    } finally {
+      setLoading(false)
     }
-  }, [])
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading dashboard...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-8">
+        <div className="text-center space-y-4">
+          <h1 className="text-4xl font-bold text-gray-900">Welcome to Job Post Management</h1>
+          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            Streamline your recruitment process with our comprehensive job posting platform
+          </p>
+        </div>
+
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-md mx-auto">
+          <h3 className="text-lg font-medium text-red-900 mb-2">Connection Error</h3>
+          <p className="text-red-700 mb-4">{error}</p>
+          <div className="flex gap-4">
+            <button
+              onClick={fetchJobs}
+              className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors"
+            >
+              Try Again
+            </button>
+            <Link
+              to="/add-job"
+              className="border border-red-300 text-red-700 hover:bg-red-100 px-4 py-2 rounded-lg transition-colors bg-white"
+            >
+              Add Job (Offline Mode)
+            </Link>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-8">
@@ -42,7 +99,7 @@ function Home() {
             <div>
               <p className="text-sm font-medium text-gray-600">Total Jobs</p>
               <p className="text-2xl font-bold text-gray-900">{stats.totalJobs}</p>
-              <p className="text-xs text-gray-500">Active job postings</p>
+              <p className="text-xs text-gray-500">Job postings</p>
             </div>
             <div className="p-3 bg-blue-100 rounded-full">
               <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -60,12 +117,32 @@ function Home() {
         <div className="bg-white rounded-xl shadow-md p-6 border border-gray-100">
           <div className="flex items-center justify-between">
             <div>
+              <p className="text-sm font-medium text-gray-600">Active Jobs</p>
+              <p className="text-2xl font-bold text-gray-900">{stats.activeJobs}</p>
+              <p className="text-xs text-gray-500">Currently hiring</p>
+            </div>
+            <div className="p-3 bg-green-100 rounded-full">
+              <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl shadow-md p-6 border border-gray-100">
+          <div className="flex items-center justify-between">
+            <div>
               <p className="text-sm font-medium text-gray-600">Companies</p>
               <p className="text-2xl font-bold text-gray-900">{stats.companies}</p>
               <p className="text-xs text-gray-500">Hiring partners</p>
             </div>
-            <div className="p-3 bg-green-100 rounded-full">
-              <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="p-3 bg-purple-100 rounded-full">
+              <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -76,29 +153,14 @@ function Home() {
             </div>
           </div>
         </div>
-
-        <div className="bg-white rounded-xl shadow-md p-6 border border-gray-100">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">This Month</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.activeJobs}</p>
-              <p className="text-xs text-gray-500">New postings</p>
-            </div>
-            <div className="p-3 bg-purple-100 rounded-full">
-              <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-              </svg>
-            </div>
-          </div>
-        </div>
       </div>
 
-      {/* Mission Section */}
+
       <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
         <h2 className="text-xl font-bold text-blue-900 mb-3">Our Mission</h2>
         <p className="text-blue-800">
           To connect talented professionals with amazing opportunities by providing an efficient and user-friendly job
-          posting management system.
+          posting management system with MongoDB integration.
         </p>
       </div>
 
@@ -112,11 +174,11 @@ function Home() {
           </li>
           <li className="flex items-center gap-2">
             <div className="w-2 h-2 bg-green-600 rounded-full"></div>
-            Comprehensive job details tracking
+            MongoDB database integration
           </li>
           <li className="flex items-center gap-2">
             <div className="w-2 h-2 bg-green-600 rounded-full"></div>
-            User-friendly interface
+            Real-time data synchronization
           </li>
           <li className="flex items-center gap-2">
             <div className="w-2 h-2 bg-green-600 rounded-full"></div>
@@ -125,72 +187,9 @@ function Home() {
         </ul>
       </div>
 
-      {/* Getting Started */}
-      <div className="bg-purple-50 border border-purple-200 rounded-xl p-6">
-        <h2 className="text-xl font-bold text-purple-900 mb-4 flex items-center gap-2">
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
-          Getting Started
-        </h2>
-        <p className="text-purple-800 mb-4">
-          Ready to post your first job? Click on "Add Job" in the sidebar to create a new job posting. You can view all
-          your posted jobs by clicking "View Jobs" to manage your recruitment pipeline effectively.
-        </p>
-        <div className="flex gap-4">
-          <Link
-            to="/add-job"
-            className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg font-medium transition-colors shadow-sm"
-          >
-            Post Your First Job
-          </Link>
-          <Link
-            to="/view-jobs"
-            className="border border-purple-300 text-purple-700 hover:bg-purple-100 px-6 py-3 rounded-lg font-medium transition-colors bg-white shadow-sm"
-          >
-            View All Jobs
-          </Link>
-        </div>
-      </div>
-
-      {/* Recent Jobs Preview */}
-      {jobs.length > 0 && (
-        <div className="bg-white rounded-xl shadow-md p-6 border border-gray-100">
-          <h2 className="text-xl font-bold text-gray-900 mb-2">Recent Job Posts</h2>
-          <p className="text-gray-600 mb-4">Your latest job postings</p>
-          <div className="space-y-3">
-            {jobs.slice(0, 3).map((job) => (
-              <div
-                key={job._id}
-                className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-100"
-              >
-                <div>
-                  <h4 className="font-medium text-gray-900">{job.title}</h4>
-                  <p className="text-sm text-gray-600">
-                    {job.company} • {job.location}
-                  </p>
-                </div>
-                <div className="text-sm text-gray-500 bg-white px-3 py-1 rounded-full border border-gray-200">
-                  {job.jobType}
-                </div>
-              </div>
-            ))}
-          </div>
-          {jobs.length > 3 && (
-            <Link
-              to="/view-jobs"
-              className="block w-full text-center border border-gray-300 hover:bg-gray-50 px-4 py-3 rounded-lg font-medium transition-colors mt-4 bg-white"
-            >
-              View All {jobs.length} Jobs
-            </Link>
-          )}
-        </div>
-      )}
+     
+      
+      
     </div>
   )
 }

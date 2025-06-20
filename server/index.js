@@ -21,10 +21,10 @@ mongoose
     useUnifiedTopology: true,
   })
   .then(() => {
-    console.log("✅ Connected to MongoDB")
+    console.log(" Connected to MongoDB")
   })
   .catch((error) => {
-    console.error("❌ MongoDB connection error:", error)
+    console.error(" MongoDB connection error:", error)
     process.exit(1)
   })
 
@@ -247,6 +247,8 @@ app.use("*", (req, res) => {
 
 // Start server
 app.listen(PORT, () => {
-  console.log(`🚀 Server is running on port ${PORT}`)
-  console.log(`📍 API endpoints available at http://localhost:${PORT}/api`)
+  console.log(` Server is running on port ${PORT}`)
+  console.log(` API endpoints available at http://localhost:${PORT}/api`)
 })
+
+

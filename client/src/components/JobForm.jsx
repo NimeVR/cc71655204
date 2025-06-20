@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
+import { jobAPI } from "../services/api"
 
 function JobForm({ initialData }) {
   const [form, setForm] = useState({
@@ -46,28 +47,18 @@ function JobForm({ initialData }) {
     setIsSubmitting(true)
 
     try {
-      const savedJobs = localStorage.getItem("jobs")
-      const jobs = savedJobs ? JSON.parse(savedJobs) : []
-
       if (initialData) {
         // Update existing job
-        const updatedJobs = jobs.map((job) => (job._id === initialData._id ? { ...job, ...form } : job))
-        localStorage.setItem("jobs", JSON.stringify(updatedJobs))
+        await jobAPI.updateJob(initialData._id, form)
       } else {
-        // Add new job
-        const newJob = {
-          _id: Date.now().toString(),
-          ...form,
-          createdAt: new Date().toISOString(),
-        }
-        jobs.push(newJob)
-        localStorage.setItem("jobs", JSON.stringify(jobs))
+        // Create new job
+        await jobAPI.createJob(form)
       }
 
       navigate("/view-jobs")
     } catch (error) {
       console.error("Error submitting form:", error)
-      alert("Failed to submit form. Please try again.")
+      alert("Failed to submit form. Please make sure the server is running.")
     } finally {
       setIsSubmitting(false)
     }
@@ -89,7 +80,7 @@ function JobForm({ initialData }) {
 
       <h2 className="text-2xl font-bold text-gray-900 mb-6">{initialData ? "Edit Job Post" : "Create New Job Post"}</h2>
 
-      <form onSubmit={handleSubmit} className="space-y-6 text-black-900">
+      <form onSubmit={handleSubmit} className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
             <label htmlFor="title" className="block text-sm font-medium text-gray-700">
@@ -183,8 +174,8 @@ function JobForm({ initialData }) {
             value={form.description}
             onChange={handleChange}
             rows={6}
-           className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors text-gray-900 bg-white"
-           />
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors text-gray-900 bg-white"
+            />
         </div>
 
         <div className="flex gap-4 pt-4">
